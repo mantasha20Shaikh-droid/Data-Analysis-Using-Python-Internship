@@ -1,23 +1,20 @@
 # TASK 1: NETFLIX DATA CLEANING & PREPARATION
 # Data Analysis Using Python Internship
+# Compatible with Visual Studio Code
 
 import pandas as pd
-import numpy as np
 from pathlib import Path
 
-print("=" * 65)
-print("       NETFLIX DATA CLEANING & PREPARATION")
-print("             DATA ANALYTICS PROJECT")
-print("=" * 65)
+print("NETFLIX DATA CLEANING & PREPARATION")
+print("Data Analysis Using Python Internship")
 
 # STEP 1: SET FILE PATHS
 
-BASE_DIR = Path("/content")
+BASE_DIR = Path("D:/Inten/Dataset.csv").resolve().parent
 OUTPUT_DIR = BASE_DIR / "outputs"
 
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Your existing uploaded dataset
 INPUT_FILE = BASE_DIR / "Dataset.csv"
 
 CLEAN_FILE = OUTPUT_DIR / "netflix_cleaned.csv"
@@ -29,8 +26,8 @@ print("\n[STEP 1] IMPORTING DATASET")
 
 if not INPUT_FILE.exists():
     raise FileNotFoundError(
-        "Dataset.csv not found in /content. "
-        "Upload your CSV file using the Google Colab Files panel."
+        f"Dataset.csv not found at: {INPUT_FILE}\n"
+        "Place Dataset.csv in the same folder as this Python file."
     )
 
 df = pd.read_csv(INPUT_FILE)
@@ -49,7 +46,7 @@ df.columns = (
 )
 
 print("\nDataset Preview:")
-display(df.head())
+print(df.head().to_string(index=False))
 
 # SAVE ORIGINAL STATISTICS
 
@@ -61,11 +58,18 @@ original_missing = int(df.isna().sum().sum())
 
 print("\n[STEP 2] IDENTIFYING MISSING VALUES")
 
-for column in df.select_dtypes(include=["object", "string"]).columns:
+missing_markers = [
+    "", "NA", "N/A", "NULL", "null", "None", "nan"
+]
+
+for column in df.select_dtypes(
+    include=["object", "string"]
+).columns:
+
     df[column] = df[column].astype("string").str.strip()
 
     df[column] = df[column].replace(
-        ["", "NA", "N/A", "NULL", "null", "None", "nan"],
+        missing_markers,
         pd.NA
     )
 
@@ -82,7 +86,7 @@ missing_report = pd.DataFrame({
 })
 
 print("\nMissing Values Report:")
-display(missing_report)
+print(missing_report.to_string(index=False))
 
 # STEP 4: REMOVE DUPLICATES
 
@@ -95,6 +99,7 @@ df = df.drop_duplicates().copy()
 duplicate_ids_removed = 0
 
 if "show_id" in df.columns:
+
     valid_ids = df["show_id"].notna()
 
     duplicate_ids_removed = int(
@@ -116,8 +121,13 @@ print(f"Duplicate IDs removed: {duplicate_ids_removed}")
 
 print("\n[STEP 4] STANDARDIZING DATA")
 
-# Standardize text columns
-for column in ["country", "rating", "type", "title", "director"]:
+for column in [
+    "country",
+    "rating",
+    "type",
+    "title",
+    "director"
+]:
     if column in df.columns:
         df[column] = (
             df[column]
@@ -125,12 +135,15 @@ for column in ["country", "rating", "type", "title", "director"]:
             .str.strip()
         )
 
-# Standardize Movie and TV Show labels
+# Standardize content type
+
 if "type" in df.columns:
     df["type"] = df["type"].str.title()
 
 # Standardize country formatting
+
 if "country" in df.columns:
+
     df["country"] = df["country"].apply(
         lambda value: (
             ", ".join(
@@ -144,18 +157,23 @@ if "country" in df.columns:
     )
 
 # Standardize rating labels
+
 if "rating" in df.columns:
     df["rating"] = df["rating"].str.upper()
 
 # Convert release year to numeric
+
 if "release_year" in df.columns:
+
     df["release_year"] = pd.to_numeric(
         df["release_year"],
         errors="coerce"
     ).astype("Int64")
 
 # Convert date_added to datetime
+
 if "date_added" in df.columns:
+
     df["date_added"] = pd.to_datetime(
         df["date_added"],
         errors="coerce"
@@ -171,39 +189,50 @@ print("\nGENERATING DATA QUALITY REPORT")
 
 quality_report = pd.DataFrame({
     "Column": df.columns,
+
     "Data_Type": [
         str(df[column].dtype)
         for column in df.columns
     ],
+
     "Missing_Values": [
         int(df[column].isna().sum())
         for column in df.columns
     ],
+
     "Missing_Percentage": [
         round(df[column].isna().mean() * 100, 2)
         for column in df.columns
     ],
+
     "Unique_Values": [
         int(df[column].nunique())
         for column in df.columns
     ]
 })
 
-quality_report.to_csv(QUALITY_FILE, index=False)
+quality_report.to_csv(
+    QUALITY_FILE,
+    index=False
+)
 
-display(quality_report)
+print("\nData Quality Report:")
+print(quality_report.to_string(index=False))
 
 # STEP 7: EXPORT CLEANED DATASET
 
 print("\n[STEP 5] EXPORTING CLEANED DATASET")
 
-df.to_csv(CLEAN_FILE, index=False)
+df.to_csv(
+    CLEAN_FILE,
+    index=False
+)
+
+print("Cleaned dataset exported successfully.")
 
 # STEP 8: FINAL SUMMARY
 
-print("\n" + "=" * 65)
-print("                 CLEANING SUMMARY")
-print("=" * 65)
+print("\nCLEANING SUMMARY")
 
 print(f"Original records       : {original_rows:,}")
 print(f"Cleaned records        : {len(df):,}")
@@ -214,13 +243,8 @@ print(f"Missing cells before   : {original_missing:,}")
 print(f"Missing cells after    : {int(df.isna().sum().sum()):,}")
 
 print("\nEXPORTED FILES")
+
 print(f"Cleaned dataset: {CLEAN_FILE}")
 print(f"Quality report : {QUALITY_FILE}")
 
 print("\nTASK 1 COMPLETED SUCCESSFULLY!")
-print("=" * 65)
-
-# DOWNLOAD THE CLEANED DATASET
-from google.colab import files
-
-files.download(str(CLEAN_FILE))
